@@ -2,59 +2,71 @@
 
 {% block title %}Spendly — Track Every Rupee{% endblock %}
 
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+{% endblock %}
+
 {% block content %}
 
 <section class="hero">
     <div class="hero-inner">
-        <div class="hero-badge">Personal Finance Tracker</div>
+        <div class="hero-badge">Free to use • No credit card needed</div>
         <h1 class="hero-title">
-            Know where your<br>
-            <em>money goes</em>
+            Master your money with ease.<br>
+            <span class="highlight">Know where it goes.</span>
         </h1>
         <p class="hero-subtitle">
-            Log expenses, understand your spending patterns,
-            and take control of your financial life —
-            one transaction at a time.
+            Track expenses, set budgets, and achieve your financial goals with our intuitive platform.
         </p>
         <div class="hero-actions">
-            <a href="{{ url_for('register') }}" class="btn-primary">Start tracking free</a>
-            <a href="{{ url_for('login') }}" class="btn-ghost">Sign in</a>
+            <a href="{{ url_for('register') }}" class="btn-primary">Get Started Free</a>
+            <a href="#" class="btn-ghost" id="openVideo">See how it works</a>
         </div>
     </div>
     <div class="hero-visual">
         <div class="mock-card">
-            <div class="mock-card-header">
-                <span class="mock-label">March 2026</span>
-                <span class="mock-total">₹12,450</span>
+            <div class="mock-window-controls">
+                <span class="dot-red"></span>
+                <span class="dot-yellow"></span>
+                <span class="dot-green"></span>
             </div>
-            <div class="mock-bars">
-                <div class="mock-bar-row">
-                    <span class="mock-cat">Bills</span>
-                    <div class="mock-bar-track">
-                        <div class="mock-bar" style="width: 72%"></div>
-                    </div>
-                    <span class="mock-amt">₹4,500</span>
+            
+            <div class="mock-subboxes">
+                <div class="subbox">
+                    <span class="subbox-label">This month</span>
+                    <span class="subbox-value">₹18,240</span>
+                    <span class="subbox-footer status-up">+12% vs last</span>
                 </div>
+                <div class="subbox">
+                    <span class="subbox-label">Budget left</span>
+                    <span class="subbox-value">₹6,760</span>
+                    <span class="subbox-footer status-success">43% remaining</span>
+                </div>
+                <div class="subbox">
+                    <span class="subbox-label">Transactions</span>
+                    <span class="subbox-value">34</span>
+                    <span class="subbox-footer status-muted">this month</span>
+                </div>
+            </div>
+
+            <div class="mock-bars">
                 <div class="mock-bar-row">
                     <span class="mock-cat">Food</span>
                     <div class="mock-bar-track">
-                        <div class="mock-bar mock-bar-2" style="width: 52%"></div>
+                        <div class="mock-bar bar-food"></div>
                     </div>
-                    <span class="mock-amt">₹3,200</span>
                 </div>
                 <div class="mock-bar-row">
-                    <span class="mock-cat">Health</span>
+                    <span class="mock-cat">Travel</span>
                     <div class="mock-bar-track">
-                        <div class="mock-bar mock-bar-3" style="width: 33%"></div>
+                        <div class="mock-bar bar-travel"></div>
                     </div>
-                    <span class="mock-amt">₹2,050</span>
                 </div>
                 <div class="mock-bar-row">
-                    <span class="mock-cat">Transport</span>
+                    <span class="mock-cat">Bills</span>
                     <div class="mock-bar-track">
-                        <div class="mock-bar mock-bar-4" style="width: 28%"></div>
+                        <div class="mock-bar bar-bills"></div>
                     </div>
-                    <span class="mock-amt">₹1,800</span>
                 </div>
             </div>
         </div>
@@ -89,4 +101,57 @@
     </div>
 </section>
 
+{% endblock %}
+
+{% block scripts %}
+<!-- Video Modal -->
+<div class="modal-overlay" id="videoModal">
+    <div class="modal-container">
+        <button class="modal-close" id="closeVideo">&times;</button>
+        <div class="video-wrapper">
+            <!-- Placeholder YouTube URL -->
+            <iframe id="videoPlayer" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const modal = document.getElementById('videoModal');
+        const openBtn = document.getElementById('openVideo');
+        const closeBtn = document.getElementById('closeVideo');
+        const player = document.getElementById('videoPlayer');
+        const videoSrc = "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"; // Example placeholder
+
+        function openModal(e) {
+            e.preventDefault();
+            player.src = videoSrc;
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden'; // Prevent scrolling
+        }
+
+        function closeModal() {
+            modal.classList.remove('active');
+            player.src = ""; // Stop video playback
+            document.body.style.overflow = ''; // Restore scrolling
+        }
+
+        if (openBtn) openBtn.addEventListener('click', openModal);
+        if (closeBtn) closeBtn.addEventListener('click', closeModal);
+
+        // Close on click outside
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        // Close on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modal.classList.contains('active')) {
+                closeModal();
+            }
+        });
+    });
+</script>
 {% endblock %}

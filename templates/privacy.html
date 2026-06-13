@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Privacy Policy — Spendly{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/legal.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="legal-section">
+    <div class="legal-inner">
+        <div class="legal-badge">Legal</div>
+        <h1 class="legal-title">Privacy <span class="highlight">Policy</span></h1>
+        <p class="legal-date">Last Updated: June 12, 2026</p>
+
+        <div class="legal-content">
+            <section>
+                <h2>1. Data We Collect</h2>
+                <p>When you register and use Spendly, we collect information such as your name, email address, and the financial data you choose to track (expenses, amounts, categories, and dates).</p>
+            </section>
+
+            <section>
+                <h2>2. How We Use Your Data</h2>
+                <p>Your data is used exclusively to provide you with insights into your spending habits. We use the information to display your dashboard, generate summaries, and enable the core functionality of the Spendly application.</p>
+            </section>
+
+            <section>
+                <h2>3. Data Storage</h2>
+                <p>We securely store your data using industry-standard practices. However, you acknowledge that no system is entirely foolproof. We regularly back up data to prevent loss in the event of hardware or system failure.</p>
+            </section>
+
+            <section>
+                <h2>4. Third Party Services</h2>
+                <p>Spendly does not sell, rent, or trade your personal information. We may occasionally use third-party analytics services to help us understand how users interact with our app, but this data is anonymized and aggregated.</p>
+            </section>
+
+            <section>
+                <h2>5. Contact Us</h2>
+                <p>If you have any questions or concerns about this Privacy Policy or your data, please contact us at privacy@spendly.example.com.</p>
+            </section>
+        </div>
+
+        <div class="legal-footer">
+            <a href="{{ url_for('landing') }}" class="btn-ghost">&larr; Back to Home</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
