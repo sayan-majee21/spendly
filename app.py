@@ -1,7 +1,8 @@
-from flask import Flask, render_template
-from database.db import init_db, seed_db
+from flask import Flask, render_template, request, redirect, url_for, flash
+from database.db import init_db, seed_db, create_user
 
 app = Flask(__name__)
+app.secret_key = "dev-secret-key" # Required for flash messages
 
 # Initialize database
 with app.app_context():
@@ -17,8 +18,27 @@ def landing():
     return render_template("landing.html")
 
 
-@app.route("/register")
+@app.route("/register", methods=["GET", "POST"])
 def register():
+    if request.method == "POST":
+        name = request.form.get("name")
+        email = request.form.get("email")
+        password = request.form.get("password")
+
+        # Basic validation
+        if not name or not email or not password:
+            flash("All fields are required.", "error")
+            return render_template("register.html")
+
+        # Create user
+        success = create_user(name, email, password)
+        if success:
+            flash("Registration successful! Please log in.", "success")
+            return redirect(url_for("login"))
+        else:
+            flash("Email already registered.", "error")
+            return render_template("register.html")
+
     return render_template("register.html")
 
 
