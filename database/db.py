@@ -2,7 +2,7 @@ import sqlite3
 from werkzeug.security import generate_password_hash
 import os
 
-DB_NAME = "spendly.db"
+DB_NAME = os.environ.get("DB_NAME", "spendly.db")
 
 def get_db():
     """Returns a SQLite connection with row_factory and foreign keys enabled."""
@@ -102,5 +102,19 @@ def create_user(name, email, password):
         return True
     except sqlite3.IntegrityError:
         return False
+    finally:
+        conn.close()
+
+def get_user_by_email(email):
+    """
+    Retrieves a user by their email address.
+    Returns the sqlite3.Row if found, or None otherwise.
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute('SELECT * FROM users WHERE email = ?', (email,))
+        return cursor.fetchone()
     finally:
         conn.close()
