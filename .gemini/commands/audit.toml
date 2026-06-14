@@ -1,2 +1,0 @@
-description = "Audit the current Flask project for best practices."
-prompt = "Act as the flask-expert subagent. Read app.py and database/db.py, then provide a list of improvements related to security, performance, and Flask idiomatic patterns."
