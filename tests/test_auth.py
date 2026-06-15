@@ -1,31 +1,6 @@
 import pytest
-import os
 from flask import session
-
-# Set DB_NAME for testing before importing app
-os.environ["DB_NAME"] = "test_spendly.db"
-
 from app import app
-from database.db import init_db
-
-@pytest.fixture
-def client():
-    app.config['TESTING'] = True
-    app.config['SECRET_KEY'] = 'test-secret'
-    
-    # Ensure a fresh database for each test
-    if os.path.exists("test_spendly.db"):
-        os.remove("test_spendly.db")
-    
-    with app.app_context():
-        init_db()
-    
-    with app.test_client() as client:
-        yield client
-    
-    # Cleanup
-    if os.path.exists("test_spendly.db"):
-        os.remove("test_spendly.db")
 
 def test_registration(client):
     """Test user registration."""
