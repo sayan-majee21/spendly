@@ -30,9 +30,10 @@ def test_login_logout(client):
         'password': 'password123'
     }, follow_redirects=True)
     
-    # Verify redirect to landing page
+    # Verify redirect to profile page
     assert response.status_code == 200
-    assert b"Track every rupee" in response.data
+    assert b"By Category" in response.data # Profile specific content
+    assert b"Total Spent" in response.data # Profile specific content
     
     # Verify session using session_transaction
     with client.session_transaction() as sess:
