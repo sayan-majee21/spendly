@@ -1,31 +1,6 @@
 import pytest
-import os
 from flask import session
-
-# Set DB_NAME for testing before importing app
-os.environ["DB_NAME"] = "test_spendly.db"
-
 from app import app
-from database.db import init_db
-
-@pytest.fixture
-def client():
-    app.config['TESTING'] = True
-    app.config['SECRET_KEY'] = 'test-secret'
-    
-    # Ensure a fresh database for each test
-    if os.path.exists("test_spendly.db"):
-        os.remove("test_spendly.db")
-    
-    with app.app_context():
-        init_db()
-    
-    with app.test_client() as client:
-        yield client
-    
-    # Cleanup
-    if os.path.exists("test_spendly.db"):
-        os.remove("test_spendly.db")
 
 def test_registration(client):
     """Test user registration."""
@@ -55,9 +30,10 @@ def test_login_logout(client):
         'password': 'password123'
     }, follow_redirects=True)
     
-    # Verify redirect to landing page
+    # Verify redirect to profile page
     assert response.status_code == 200
-    assert b"Track every rupee" in response.data
+    assert b"By Category" in response.data # Profile specific content
+    assert b"Total Spent" in response.data # Profile specific content
     
     # Verify session using session_transaction
     with client.session_transaction() as sess:
