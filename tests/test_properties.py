@@ -111,5 +111,64 @@ def test_login_redirection_property(client, name, email, password):
     assert response.status_code == 200
     assert b"By Category" in response.data
     assert b"Recent Transactions" in response.data
-    # In Step 4, the email is hardcoded to user@example.com in the view
-    assert b"user@example.com" in response.data
+@pytest.mark.hypothesis
+@settings(suppress_health_check=[HealthCheck.function_scoped_fixture], max_examples=10, deadline=None)
+@given(
+    name=st.text(min_size=1, max_size=50).filter(lambda x: '\0' not in x),
+    email=st.emails(),
+    password=st.text(min_size=1, max_size=50).filter(lambda x: '\0' not in x),
+    expenses=st.lists(
+        st.tuples(
+            st.floats(min_value=1.0, max_value=10000.0, allow_nan=False, allow_infinity=False),
+            st.sampled_from(["Food", "Transport", "Bills", "Entertainment", "Health"]),
+            st.just("2026-06-16"),
+            st.text(min_size=1, max_size=50).filter(lambda x: '\0' not in x)
+        ),
+        min_size=1,
+        max_size=10
+    )
+)
+def test_profile_stats_correctness(client, name, email, password, expenses):
+    """
+    Property: The Profile page should correctly display the sum and count 
+     of all expenses added to the database for that user.
+    """
+    with client.session_transaction() as sess:
+        sess.clear()
+
+    conn = get_db()
+    conn.execute("DELETE FROM expenses")
+    conn.execute("DELETE FROM users")
+    conn.commit()
+    
+    # Create user
+    create_user(name, email, password)
+    user = get_user_by_email(email)
+    user_id = user['id']
+
+    # Add expenses
+    total_sum = 0
+    for amount, category, date, desc in expenses:
+        conn.execute('''
+            INSERT INTO expenses (user_id, amount, category, date, description)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (user_id, amount, category, date, desc))
+        total_sum += amount
+    conn.commit()
+    conn.close()
+
+    # Login
+    client.post('/login', data={'email': email, 'password': password}, follow_redirects=True)
+
+    # Check Profile
+    response = client.get('/profile')
+    
+    # Verify Transaction Count
+    expected_count = f">{len(expenses)}</div>".encode('utf-8')
+    assert expected_count in response.data
+
+    # Verify Total Spent (formatted with comma and two decimals)
+    # Note: ₹ symbol might be encoded or literal depending on template
+    expected_sum_str = f"₹{total_sum:,.2f}".encode('utf-8')
+    assert expected_sum_str in response.data
+
