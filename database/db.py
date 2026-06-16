@@ -118,3 +118,99 @@ def get_user_by_email(email):
         return cursor.fetchone()
     finally:
         conn.close()
+
+def get_user_by_id(user_id):
+    """Retrieves a user by their ID."""
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('SELECT * FROM users WHERE id = ?', (user_id,))
+        return cursor.fetchone()
+    finally:
+        conn.close()
+
+def get_user_expenses(user_id):
+    """Fetches all expenses for a user, ordered by date descending."""
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+            SELECT * FROM expenses 
+            WHERE user_id = ? 
+            ORDER BY date DESC
+        ''', (user_id,))
+        return cursor.fetchall()
+    finally:
+        conn.close()
+
+def get_user_stats(user_id):
+    """Calculates total spent, transaction count, and top category."""
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+            SELECT 
+                COALESCE(SUM(amount), 0) as total_spent,
+                COUNT(id) as count,
+                (SELECT category FROM expenses WHERE user_id = ? GROUP BY category ORDER BY SUM(amount) DESC LIMIT 1) as top_category
+            FROM expenses
+            WHERE user_id = ?
+        ''', (user_id, user_id))
+        return cursor.fetchone()
+    finally:
+        conn.close()
+
+def get_category_breakdown(user_id):
+    """
+    Step 5: Fetch category breakdown and calculate percentages.
+    Calculates total spent per category and percentages, ensuring they sum to 100.
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+            SELECT category as name, SUM(amount) as amount
+            FROM expenses
+            WHERE user_id = ?
+            GROUP BY category
+            ORDER BY amount DESC
+        ''', (user_id,))
+        rows = cursor.fetchall()
+        
+        total = sum(row['amount'] for row in rows)
+        if total == 0:
+            return []
+
+        # Initial percentages calculation
+        breakdown = []
+        for row in rows:
+            # Use floating point for precision before final adjustment
+            percent = (row['amount'] / total) * 100
+            breakdown.append({
+                'name': row['name'],
+                'amount': row['amount'],
+                'percent': int(percent), # Initial integer floor
+                'remainder': percent - int(percent),
+                'class': row['name'].lower().replace(' ', '-')
+            })
+        
+        # Adjust percentages to sum to exactly 100
+        current_sum = sum(b['percent'] for b in breakdown)
+        diff = 100 - current_sum
+        
+        # Sort by remainder to distribute the difference
+        if diff > 0:
+            breakdown.sort(key=lambda x: x['remainder'], reverse=True)
+            for i in range(int(diff)):
+                breakdown[i]['percent'] += 1
+        
+        # Re-sort by amount descending for the UI
+        breakdown.sort(key=lambda x: x['amount'], reverse=True)
+        
+        # Remove temporary 'remainder' key
+        for b in breakdown:
+            del b['remainder']
+            
+        return breakdown
+    finally:
+        conn.close()

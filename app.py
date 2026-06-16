@@ -1,5 +1,12 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()  # Load environment variables from .env file
+
 from flask import Flask, render_template, request, redirect, url_for, flash, session
-from database.db import init_db, seed_db, create_user, get_user_by_email
+from database.db import (
+    init_db, seed_db, create_user, get_user_by_email,
+    get_user_by_id, get_user_expenses, get_user_stats, get_category_breakdown
+)
 from werkzeug.security import check_password_hash
 
 app = Flask(__name__)
@@ -90,46 +97,60 @@ def logout():
 
 @app.route("/profile")
 def profile():
+    """Step 5: Render the profile page with real database data."""
     if not session.get("user_id"):
         flash("Please log in to view your profile.", "error")
         return redirect(url_for("login"))
 
-    # Hardcoded mock data for Step 4
+    from datetime import datetime
+    
+    user_id = session["user_id"]
+    user_record = get_user_by_id(user_id)
+
+    # Format user data
     user_data = {
-        "name": session.get("user_name", "User"),
-        "email": "user@example.com",
-        "member_since": "June 2026",
+        "name": user_record["name"],
+        "email": user_record["email"],
         "initials": "U"
     }
-    
-    # Extract initials from name
-    if "user_name" in session:
-        names = session["user_name"].split()
-        if len(names) >= 2:
-            user_data["initials"] = (names[0][0] + names[-1][0]).upper()
-        elif names:
-            user_data["initials"] = names[0][0].upper()
 
+    # Format member_since
+    try:
+        dt = datetime.strptime(user_record["created_at"], "%Y-%m-%d %H:%M:%S")
+        user_data["member_since"] = dt.strftime("%B %Y")
+    except (ValueError, TypeError):
+        user_data["member_since"] = "Unknown"
+
+    # Extract initials from name
+    names = user_data["name"].split()
+    if len(names) >= 2:
+        user_data["initials"] = (names[0][0] + names[-1][0]).upper()
+    elif names:
+        user_data["initials"] = names[0][0].upper()
+
+    # Get and format stats
+    raw_stats = get_user_stats(user_id)
     stats = {
-        "total_spent": "₹14,250",
-        "count": 24,
-        "top_category": "Food & Dining"
+        "total_spent": f"₹{raw_stats['total_spent']:,.2f}",
+        "count": raw_stats['count'],
+        "top_category": raw_stats['top_category'] or "None"
     }
 
-    transactions = [
-        {"date": "2026-06-15", "desc": "Organic Groceries", "category": "Food", "amount": "₹2,400"},
-        {"date": "2026-06-14", "desc": "Gas Station", "category": "Transport", "amount": "₹3,500"},
-        {"date": "2026-06-12", "desc": "Netflix Subscription", "category": "Entertainment", "amount": "₹499"},
-        {"date": "2026-06-10", "desc": "Starbucks Coffee", "category": "Food", "amount": "₹350"},
-        {"date": "2026-06-08", "desc": "Gym Membership", "category": "Health", "amount": "₹2,000"}
-    ]
+    # Get and format transactions
+    raw_expenses = get_user_expenses(user_id)
+    transactions = []
+    for exp in raw_expenses:
+        transactions.append({
+            "date": exp["date"],
+            "desc": exp["description"],
+            "category": exp["category"],
+            "amount": f"₹{exp['amount']:,.2f}"
+        })
 
-    categories = [
-        {"name": "Food", "amount": "₹5,200", "percent": 36, "class": "food"},
-        {"name": "Transport", "amount": "₹4,100", "percent": 29, "class": "transport"},
-        {"name": "Health", "amount": "₹3,000", "percent": 21, "class": "health"},
-        {"name": "Entertainment", "amount": "₹1,950", "percent": 14, "class": "entertainment"}
-    ]
+    # Get and format categories
+    categories = get_category_breakdown(user_id)
+    for cat in categories:
+        cat["amount"] = f"₹{cat['amount']:,.2f}"
 
     return render_template("profile.html", 
                            user=user_data, 
