@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 load_dotenv()  # Load environment variables from .env file
 
 from flask import Flask, render_template, request, redirect, url_for, flash, session
+from datetime import datetime, date, timedelta
 from database.db import (
     init_db, seed_db, create_user, get_user_by_email,
     get_user_by_id, get_user_expenses, get_user_stats, get_category_breakdown
@@ -97,15 +98,52 @@ def logout():
 
 @app.route("/profile")
 def profile():
-    """Step 5: Render the profile page with real database data."""
+    """Step 6: Render the profile page with date filter support."""
     if not session.get("user_id"):
         flash("Please log in to view your profile.", "error")
         return redirect(url_for("login"))
 
-    from datetime import datetime
-    
     user_id = session["user_id"]
     user_record = get_user_by_id(user_id)
+
+    # Date Filtering (Step 6)
+    date_from_raw = request.args.get("date_from")
+    date_to_raw = request.args.get("date_to")
+    
+    date_from = None
+    date_to = None
+    
+    # Validation
+    if date_from_raw and date_to_raw:
+        try:
+            start_date = datetime.strptime(date_from_raw, "%Y-%m-%d").date()
+            end_date = datetime.strptime(date_to_raw, "%Y-%m-%d").date()
+
+            if start_date > end_date:
+                flash("Start date must be before end date.", "error")
+            else:
+                date_from = date_from_raw
+                date_to = date_to_raw
+        except ValueError:
+            # Silently fallback on malformed dates
+            pass
+
+    # Preset calculation
+    today = date.today()
+    presets = {
+        "this_month": {
+            "from": today.replace(day=1).isoformat(),
+            "to": today.isoformat()
+        },
+        "last_3_months": {
+            "from": (today - timedelta(days=90)).isoformat(),
+            "to": today.isoformat()
+        },
+        "last_6_months": {
+            "from": (today - timedelta(days=180)).isoformat(),
+            "to": today.isoformat()
+        }
+    }
 
     # Format user data
     user_data = {
@@ -116,8 +154,8 @@ def profile():
 
     # Format member_since
     try:
-        dt = datetime.strptime(user_record["created_at"], "%Y-%m-%d %H:%M:%S")
-        user_data["member_since"] = dt.strftime("%B %Y")
+        dt_member = datetime.strptime(user_record["created_at"], "%Y-%m-%d %H:%M:%S")
+        user_data["member_since"] = dt_member.strftime("%B %Y")
     except (ValueError, TypeError):
         user_data["member_since"] = "Unknown"
 
@@ -129,7 +167,7 @@ def profile():
         user_data["initials"] = names[0][0].upper()
 
     # Get and format stats
-    raw_stats = get_user_stats(user_id)
+    raw_stats = get_user_stats(user_id, date_from, date_to)
     stats = {
         "total_spent": f"₹{raw_stats['total_spent']:,.2f}",
         "count": raw_stats['count'],
@@ -137,7 +175,7 @@ def profile():
     }
 
     # Get and format transactions
-    raw_expenses = get_user_expenses(user_id)
+    raw_expenses = get_user_expenses(user_id, date_from, date_to)
     transactions = []
     for exp in raw_expenses:
         transactions.append({
@@ -148,7 +186,7 @@ def profile():
         })
 
     # Get and format categories
-    categories = get_category_breakdown(user_id)
+    categories = get_category_breakdown(user_id, date_from, date_to)
     for cat in categories:
         cat["amount"] = f"₹{cat['amount']:,.2f}"
 
@@ -156,7 +194,10 @@ def profile():
                            user=user_data, 
                            stats=stats, 
                            transactions=transactions, 
-                           categories=categories)
+                           categories=categories,
+                           date_from=date_from,
+                           date_to=date_to,
+                           presets=presets)
 
 
 @app.route("/expenses/add")

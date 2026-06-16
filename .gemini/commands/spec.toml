@@ -93,16 +93,19 @@ If none: state "No database changes".
 
 ## Templates
 - **Create:** list new templates with their path
-- **Modify:** list existing templates and what changes
+- **Modify:** list existing templates and what changes. Include details about UI state (e.g., active states) and visual feedback.
 
 ## Files to change
-Every file that will be modified.
+List every file that will be modified. For each file, provide a bulleted list of the exact functions/classes to be modified and a brief description of the logic changes (e.g., adding optional parameters).
 
 ## Files to create
 Every new file that will be created.
 
 ## New dependencies
 Any new pip packages. If none: state "No new dependencies".
+
+## Edge cases and Error Handling
+Define how the feature should handle invalid inputs, empty states, or unexpected user behavior (e.g., malformed strings, out-of-bounds dates). Specify whether it should flash an error or silently fall back.
 
 ## Rules for implementation
 Specific constraints Gemini must follow. Always include:
@@ -111,10 +114,12 @@ Specific constraints Gemini must follow. Always include:
 - Passwords hashed with werkzeug
 - Use CSS variables — never hardcode hex values
 - All templates extend `base.html`
+- Include specific rules for input validation and edge cases.
 
 ## Definition of done
 A specific testable checklist. Each item must be
 something that can be verified by running the app.
+Must include verifications for both the happy path and the edge cases/error handling paths defined above.
 ---
 
 ## Step 8 — Save the spec

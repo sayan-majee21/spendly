@@ -33,7 +33,7 @@ def test_login_logout(client):
     # Verify redirect to profile page
     assert response.status_code == 200
     assert b"By Category" in response.data # Profile specific content
-    assert b"Total Spent" in response.data # Profile specific content
+    assert b"TOTAL SPENT" in response.data # Profile specific content
     
     # Verify session using session_transaction
     with client.session_transaction() as sess:

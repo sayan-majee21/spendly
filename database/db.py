@@ -129,52 +129,72 @@ def get_user_by_id(user_id):
     finally:
         conn.close()
 
-def get_user_expenses(user_id):
-    """Fetches all expenses for a user, ordered by date descending."""
+def get_user_expenses(user_id, date_from=None, date_to=None):
+    """Fetches all expenses for a user, ordered by date descending, optionally filtered by date range."""
     conn = get_db()
     cursor = conn.cursor()
     try:
-        cursor.execute('''
-            SELECT * FROM expenses 
-            WHERE user_id = ? 
-            ORDER BY date DESC
-        ''', (user_id,))
+        query = 'SELECT * FROM expenses WHERE user_id = ?'
+        params = [user_id]
+        
+        if date_from and date_to:
+            query += ' AND date BETWEEN ? AND ?'
+            params.extend([date_from, date_to])
+            
+        query += ' ORDER BY date DESC'
+        
+        cursor.execute(query, params)
         return cursor.fetchall()
     finally:
         conn.close()
 
-def get_user_stats(user_id):
-    """Calculates total spent, transaction count, and top category."""
+def get_user_stats(user_id, date_from=None, date_to=None):
+    """Calculates total spent, transaction count, and top category, optionally filtered by date range."""
     conn = get_db()
     cursor = conn.cursor()
     try:
-        cursor.execute('''
+        date_filter = ""
+        params_sub = [user_id]
+        params_main = [user_id]
+        
+        if date_from and date_to:
+            date_filter = " AND date BETWEEN ? AND ?"
+            params_sub.extend([date_from, date_to])
+            params_main.extend([date_from, date_to])
+
+        query = f'''
             SELECT 
                 COALESCE(SUM(amount), 0) as total_spent,
                 COUNT(id) as count,
-                (SELECT category FROM expenses WHERE user_id = ? GROUP BY category ORDER BY SUM(amount) DESC LIMIT 1) as top_category
+                (SELECT category FROM expenses WHERE user_id = ? {date_filter} GROUP BY category ORDER BY SUM(amount) DESC LIMIT 1) as top_category
             FROM expenses
-            WHERE user_id = ?
-        ''', (user_id, user_id))
+            WHERE user_id = ? {date_filter}
+        '''
+        
+        # We must pass params twice because the date_filter is used in both the subquery and the main query
+        cursor.execute(query, params_sub + params_main)       
         return cursor.fetchone()
     finally:
         conn.close()
 
-def get_category_breakdown(user_id):
+def get_category_breakdown(user_id, date_from=None, date_to=None):
     """
-    Step 5: Fetch category breakdown and calculate percentages.
+    Step 5/6: Fetch category breakdown and calculate percentages, optionally filtered by date range.
     Calculates total spent per category and percentages, ensuring they sum to 100.
     """
     conn = get_db()
     cursor = conn.cursor()
     try:
-        cursor.execute('''
-            SELECT category as name, SUM(amount) as amount
-            FROM expenses
-            WHERE user_id = ?
-            GROUP BY category
-            ORDER BY amount DESC
-        ''', (user_id,))
+        query = 'SELECT category as name, SUM(amount) as amount FROM expenses WHERE user_id = ?'
+        params = [user_id]
+        
+        if date_from and date_to:
+            query += ' AND date BETWEEN ? AND ?'
+            params.extend([date_from, date_to])
+            
+        query += ' GROUP BY category ORDER BY amount DESC'
+        
+        cursor.execute(query, params)
         rows = cursor.fetchall()
         
         total = sum(row['amount'] for row in rows)

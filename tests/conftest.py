@@ -4,11 +4,16 @@ import pytest
 # SET THIS BEFORE ANY OTHER IMPORTS
 os.environ["DB_NAME"] = "test_spendly.db"
 
-from app import app
+from app import app as flask_app
 from database.db import init_db
 
 @pytest.fixture
-def client():
+def app():
+    """Provides the Flask application instance."""
+    return flask_app
+
+@pytest.fixture
+def client(app):
     """Provides a test client with a fresh database for each test function."""
     app.config['TESTING'] = True
     app.config['SECRET_KEY'] = 'test-secret'
