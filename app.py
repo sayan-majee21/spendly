@@ -2,7 +2,8 @@ import os
 from dotenv import load_dotenv
 load_dotenv()  # Load environment variables from .env file
 
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from typing import Union
+from flask import Flask, render_template, request, redirect, url_for, flash, session, Response
 from datetime import datetime, date, timedelta
 from database.db import (
     init_db, seed_db, create_user, get_user_by_email,
@@ -83,6 +84,14 @@ def terms():
 @app.route("/privacy")
 def privacy():
     return render_template("privacy.html")
+
+
+@app.route("/analytics")
+def analytics() -> Union[str, Response]:
+    if not session.get("user_id"):
+        flash("Please log in to view the analytics page.", "error")
+        return redirect(url_for("login"))
+    return render_template("analytics.html")
 
 
 # ------------------------------------------------------------------ #
