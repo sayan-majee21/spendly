@@ -1,6 +1,8 @@
-description = "Runs parallel security and quality code review for a specific Spendly feature. Pass the spec name as argument e.g. /code-review-feature 03-login"
+---
+name: code-review-feature
+description: Runs parallel security and quality code review for a specific Spendly feature. Pass the spec name as argument e.g. /code-review-feature 03-login
+---
 
-prompt = """
 Instructions:
 You are allowed to use the following tools:
 - Bash(git diff)
@@ -109,4 +111,3 @@ approves.
 - If either subagent fails or returns no output, 
   report it and do not present a partial review 
   as complete
-"""

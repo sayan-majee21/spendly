@@ -1,4 +1,5 @@
 import sqlite3
+from typing import Optional
 from werkzeug.security import generate_password_hash
 import os
 
@@ -232,5 +233,27 @@ def get_category_breakdown(user_id, date_from=None, date_to=None):
             del b['remainder']
             
         return breakdown
+    finally:
+        conn.close()
+
+def add_expense(user_id: int, amount: float, category: str,
+                date_str: str, description: Optional[str]) -> bool:
+    """
+    Inserts a new expense row for the given user.
+    Returns True on success, False on IntegrityError.
+    Unexpected errors are allowed to propagate for visibility.
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            'INSERT INTO expenses (user_id, amount, category, date, description)'
+            ' VALUES (?, ?, ?, ?, ?)',
+            (user_id, amount, category, date_str, description)
+        )
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        return False
     finally:
         conn.close()
