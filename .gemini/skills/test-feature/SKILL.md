@@ -1,6 +1,8 @@
-description = "Writes and runs tests for a specific Spendly feature. Pass the spec name as argument e.g. /test-feature 05-backend-connection"
+---
+name: test-feature
+description: Writes and runs tests for a specific Spendly feature. Pass the spec name as argument e.g. /test-feature 05-backend-connection
+---
 
-prompt = """
 Instructions:
 You are allowed to use the following tools:
 - Bash(python -m pytest)
@@ -98,4 +100,3 @@ summary:
 One of:
 - ✅ Ready for code review — all tests pass
 - ❌ Needs fixes — list the failing tests and their root causes
-"""
