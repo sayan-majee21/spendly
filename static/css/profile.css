@@ -363,3 +363,23 @@
         text-align: center;
     }
 }
+
+.btn-edit {
+    display: inline-block;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-edit:hover {
+    border-color: var(--ink);
+    color: var(--ink);
+    background: var(--paper-warm);
+}
+

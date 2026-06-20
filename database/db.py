@@ -257,3 +257,39 @@ def add_expense(user_id: int, amount: float, category: str,
         return False
     finally:
         conn.close()
+
+
+def get_expense_by_id(expense_id: int) -> Optional[sqlite3.Row]:
+    """
+    Retrieves a single expense by its ID.
+    Returns the sqlite3.Row if found, or None otherwise.
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('SELECT * FROM expenses WHERE id = ?', (expense_id,))
+        return cursor.fetchone()
+    finally:
+        conn.close()
+
+
+def update_expense(expense_id: int, amount: float, category: str,
+                   date_str: str, description: Optional[str]) -> bool:
+    """
+    Updates the specified expense row in the database.
+    Returns True on success, False on error.
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            'UPDATE expenses SET amount = ?, category = ?, date = ?, description = ? WHERE id = ?',
+            (amount, category, date_str, description, expense_id)
+        )
+        conn.commit()
+        return True
+    except sqlite3.Error:
+        return False
+    finally:
+        conn.close()
+
