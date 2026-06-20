@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Edit Expense – Spendly{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/edit_expense.css') }}">
+{% endblock %}
+
+{% block content %}
+{# Step 8: Edit Expense form #}
+<section class="edit-expense-section">
+    <div class="edit-expense-container">
+
+        <div class="edit-expense-header">
+            <h1 class="edit-expense-title">Edit Expense</h1>
+            <a href="{{ url_for('profile') }}" class="back-link">← Cancel</a>
+        </div>
+
+        <div class="edit-expense-card">
+            <form method="POST" action="{{ url_for('edit_expense', id=expense['id']) }}">
+
+                {# CSRF protection token #}
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+                {# Amount #}
+                <div class="form-group">
+                    <label for="amount">Amount (₹)</label>
+                    <input
+                        class="form-input"
+                        type="number"
+                        id="amount"
+                        name="amount"
+                        step="0.01"
+                        min="0.01"
+                        max="999999.99"
+                        placeholder="0.00"
+                        required
+                        value="{{ form.amount if form else '' }}"
+                    >
+                </div>
+
+                {# Category #}
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <select class="form-input" id="category" name="category" required>
+                        <option value="" disabled {{ '' if (form and form.category) else 'selected' }}>
+                            Select a category
+                        </option>
+                        {% for cat in categories %}
+                        <option value="{{ cat }}" {{ 'selected' if form and form.category == cat else '' }}>
+                            {{ cat }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                {# Date #}
+                <div class="form-group">
+                    <label for="date">Date</label>
+                    <input
+                        class="form-input"
+                        type="date"
+                        id="date"
+                        name="date"
+                        max="{{ today }}"
+                        required
+                        value="{{ form.date if form else '' }}"
+                    >
+                </div>
+
+                {# Description #}
+                <div class="form-group">
+                    <label for="description">
+                        Description <span class="optional-label">(optional)</span>
+                    </label>
+                    <textarea
+                        class="form-input"
+                        id="description"
+                        name="description"
+                        rows="3"
+                        maxlength="200"
+                        placeholder="e.g. Grocery shopping at Big Bazaar"
+                    >{{ form.description if form else '' }}</textarea>
+                </div>
+
+                <button type="submit" class="btn-submit">Save Changes</button>
+
+            </form>
+        </div>
+
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}{% endblock %}

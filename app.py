@@ -9,7 +9,7 @@ from datetime import datetime, date, timedelta
 from database.db import (
     init_db, seed_db, create_user, get_user_by_email,
     get_user_by_id, get_user_expenses, get_user_stats, get_category_breakdown,
-    add_expense as db_add_expense
+    add_expense as db_add_expense, get_expense_by_id, update_expense
 )
 from werkzeug.security import check_password_hash
 
@@ -195,6 +195,7 @@ def profile():
     transactions = []
     for exp in raw_expenses:
         transactions.append({
+            "id": exp["id"],
             "date": exp["date"],
             "desc": exp["description"],
             "category": exp["category"],
@@ -328,9 +329,135 @@ def add_expense() -> Union[str, Response]:
     )
 
 
-@app.route("/expenses/<int:id>/edit")
-def edit_expense(id):
-    return "Edit expense — coming in Step 8"
+@app.route("/expenses/<int:id>/edit", methods=["GET", "POST"])
+def edit_expense(id: int) -> Union[str, Response]:
+    """Step 8: Render and handle the edit-expense form."""
+    if not session.get("user_id"):
+        flash("Please log in to edit an expense.", "error")
+        return redirect(url_for("login"))
+
+    expense = get_expense_by_id(id)
+    if not expense:
+        flash("Expense not found.", "error")
+        return redirect(url_for("profile"))
+
+    if expense["user_id"] != session["user_id"]:
+        flash("You are not authorized to edit this expense.", "error")
+        return redirect(url_for("profile"))
+
+    today_date = date.today()
+    today = today_date.isoformat()
+
+    if request.method == "GET":
+        if not app.testing:
+            csrf_token = secrets.token_hex(32)
+            session["csrf_token"] = csrf_token
+        form_data = {
+            "amount": str(expense["amount"]),
+            "category": expense["category"],
+            "date": expense["date"],
+            "description": expense["description"] or ""
+        }
+        return render_template(
+            "edit_expense.html",
+            expense=expense,
+            today=today,
+            form=form_data,
+            categories=ALLOWED_CATEGORIES,
+            csrf_token=session.get("csrf_token", "")
+        )
+
+    # --- POST: CSRF check (skipped in testing mode) ---
+    if not app.testing:
+        submitted_token = request.form.get("csrf_token", "")
+        expected_token = session.pop("csrf_token", None)
+        if not submitted_token or submitted_token != expected_token:
+            flash("Invalid request. Please try again.", "error")
+            new_token = secrets.token_hex(32)
+            session["csrf_token"] = new_token
+            form_data = {
+                "amount": request.form.get("amount", "").strip(),
+                "category": request.form.get("category", "").strip(),
+                "date": request.form.get("date", "").strip(),
+                "description": request.form.get("description", "").strip()
+            }
+            return render_template(
+                "edit_expense.html",
+                expense=expense,
+                today=today,
+                form=form_data,
+                categories=ALLOWED_CATEGORIES,
+                csrf_token=new_token
+            )
+
+    # --- POST: read fields ---
+    amount_raw = request.form.get("amount", "").strip()
+    category = request.form.get("category", "").strip()
+    date_raw = request.form.get("date", "").strip()
+    desc_raw = request.form.get("description", "").strip()
+    description = desc_raw if desc_raw else None
+
+    form_data = {
+        "amount": amount_raw,
+        "category": category,
+        "date": date_raw,
+        "description": desc_raw
+    }
+
+    def _rerender(msg: str) -> str:
+        """Flash an error and re-render the form with fresh CSRF token."""
+        flash(msg, "error")
+        if not app.testing:
+            new_token = secrets.token_hex(32)
+            session["csrf_token"] = new_token
+        return render_template(
+            "edit_expense.html",
+            expense=expense,
+            today=today,
+            form=form_data,
+            categories=ALLOWED_CATEGORIES,
+            csrf_token=session.get("csrf_token", "")
+        )
+
+    # --- Validate amount ---
+    try:
+        amount = float(amount_raw)
+        if amount < 0.01 or amount > 999_999.99:
+            raise ValueError
+    except ValueError:
+        return _rerender("Please enter a valid amount between ₹0.01 and ₹9,99,999.99.")
+
+    # --- Validate category ---
+    if category not in ALLOWED_CATEGORIES:
+        return _rerender("Please select a valid category.")
+
+    # --- Validate date ---
+    try:
+        expense_date = datetime.strptime(date_raw, "%Y-%m-%d").date()
+    except ValueError:
+        return _rerender("Please enter a valid date in YYYY-MM-DD format.")
+
+    if expense_date > today_date:
+        return _rerender("Date cannot be in the future.")
+
+    # --- Validate description length ---
+    if description and len(description) > 200:
+        return _rerender("Description must be 200 characters or fewer.")
+
+    # --- Persist ---
+    success = update_expense(
+        expense_id=id,
+        amount=amount,
+        category=category,
+        date_str=expense_date.isoformat(),
+        description=description
+    )
+
+    if success:
+        flash("Expense updated successfully.", "success")
+        return redirect(url_for("profile"))
+
+    return _rerender("Something went wrong. Please try again.")
 
 
 @app.route("/expenses/<int:id>/delete")
