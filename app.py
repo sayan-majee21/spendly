@@ -9,7 +9,8 @@ from datetime import datetime, date, timedelta
 from database.db import (
     init_db, seed_db, create_user, get_user_by_email,
     get_user_by_id, get_user_expenses, get_user_stats, get_category_breakdown,
-    add_expense as db_add_expense, get_expense_by_id, update_expense
+    add_expense as db_add_expense, get_expense_by_id, update_expense,
+    delete_expense as db_delete_expense
 )
 from werkzeug.security import check_password_hash
 
@@ -461,8 +462,27 @@ def edit_expense(id: int) -> Union[str, Response]:
 
 
 @app.route("/expenses/<int:id>/delete")
-def delete_expense(id):
-    return "Delete expense — coming in Step 9"
+def delete_expense(id: int) -> Union[str, Response]:
+    if not session.get("user_id"):
+        flash("Please log in to delete an expense.", "error")
+        return redirect(url_for("login"))
+
+    expense = get_expense_by_id(id)
+    if not expense:
+        flash("Expense not found.", "error")
+        return redirect(url_for("profile"))
+
+    if expense["user_id"] != session["user_id"]:
+        flash("You are not authorized to delete this expense.", "error")
+        return redirect(url_for("profile"))
+
+    success = db_delete_expense(id)
+    if success:
+        flash("Expense deleted successfully.", "success")
+    else:
+        flash("Something went wrong. Please try again.", "error")
+
+    return redirect(url_for("profile"))
 
 
 if __name__ == "__main__":

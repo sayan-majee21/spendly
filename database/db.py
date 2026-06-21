@@ -293,3 +293,21 @@ def update_expense(expense_id: int, amount: float, category: str,
     finally:
         conn.close()
 
+
+def delete_expense(expense_id: int) -> bool:
+    """
+    Deletes the specified expense row from the database.
+    Returns True on success, False on error.
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('DELETE FROM expenses WHERE id = ?', (expense_id,))
+        conn.commit()
+        return True
+    except sqlite3.Error:
+        return False
+    finally:
+        conn.close()
+
+
