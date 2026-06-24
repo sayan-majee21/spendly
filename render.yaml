@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: spendly-expense-tracker
+    runtime: docker
+    plan: free
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DB_NAME
+        value: spendly.db

@@ -1,5 +1,4 @@
 import pytest
-from datetime import date
 from unittest.mock import patch
 from database.db import get_db, create_user
 
@@ -20,7 +19,6 @@ def auth_client(client, app):
     )
     return client
 
-
 def _get_test_user_id():
     """Return the DB id of the standard test user."""
     conn = get_db()
@@ -29,7 +27,6 @@ def _get_test_user_id():
     row = cursor.fetchone()
     conn.close()
     return row["id"]
-
 
 def _insert_test_expense(user_id: int, amount: float, category: str, date_str: str, description: str) -> int:
     """Inserts a test expense for the user and returns the inserted ID."""

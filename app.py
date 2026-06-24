@@ -15,7 +15,7 @@ from database.db import (
 from werkzeug.security import check_password_hash
 
 app = Flask(__name__)
-app.secret_key = "dev-secret-key" # Required for flash messages
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")  # Required for flash messages
 
 # Initialize database
 with app.app_context():
